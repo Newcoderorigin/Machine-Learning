@@ -26,5 +26,61 @@
       "min_scale": 0.5,
       "max_scale": 1.5
     }
+  },
+  "training_pipeline": {
+    "loss_function": "mae",
+    "optimizer": "sgd",
+    "optimizer_params": {
+      "lr": 0.05,
+      "momentum": 0.8,
+      "weight_decay": 0.0005
+    },
+    "scheduler": {
+      "type": "step",
+      "interval": "epoch",
+      "step_size": 2,
+      "gamma": 0.5,
+      "warmup_steps": 1,
+      "min_lr": 0.00001
+    },
+    "gradient_clipping": {
+      "enabled": true,
+      "type": "norm",
+      "value": 0.75,
+      "mode": "global_norm"
+    },
+    "mixed_precision": {
+      "enabled": true,
+      "backend": "native",
+      "level": "O1"
+    },
+    "distributed": {
+      "backend": "nccl",
+      "strategy": "ddp",
+      "world_size": 2,
+      "num_devices": 2,
+      "device_ids": [0, 1]
+    },
+    "hooks": {
+      "enabled": true
+    },
+    "optimizer_swaps": {
+      "epochs": [3]
+    },
+    "gradient_noise_scale": 0.01,
+    "parallel_workers": 4,
+    "max_epochs": 5,
+    "max_steps": 250,
+    "microbatch_size": 8,
+    "checkpointing": true,
+    "checkpoint_interval": 50,
+    "log_interval": 20,
+    "validation_interval": 1,
+    "early_stopping": true,
+    "early_stopping_patience": 2,
+    "early_stopping_metric": "val_loss",
+    "resume_from_checkpoint": null,
+    "extra_metrics": ["accuracy", "f1"],
+    "seed": 1234
   }
 }
