@@ -67,10 +67,16 @@ class GradientResonanceOptimization:
             raise TypeError("Optimizer does not expose param_groups for modulation")
         for group in param_groups:
             for param in group.get("params", []):
-                name = getattr(param, "name", None)
-                if name and name in scaled:
-                    if getattr(param, "grad", None) is not None:
-                        param.grad = scaled[name]
+                target = None
+                if param in scaled:
+                    target = scaled[param]
+                else:
+                    name = getattr(param, "name", None)
+                    if name and name in scaled:
+                        target = scaled[name]
+                if target is None:
+                    continue
+                setattr(param, "grad", target)
         optimizer.step()
         return scaled
 

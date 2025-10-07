@@ -59,3 +59,56 @@ def test_gradient_resonance_optimization_scales_gradients():
     second = optimizer.modulate(gradients)
     assert first["layer1"] != second["layer1"]
     assert all(abs(v) <= 1.5 for v in second["layer1"])
+
+
+class _DummyParam:
+    def __init__(self) -> None:
+        self.grad = None
+
+
+class _DummyOptimizer:
+    def __init__(self, params):
+        self.param_groups = [{"params": list(params)}]
+        self.steps = 0
+
+    def step(self):
+        self.steps += 1
+
+
+def test_gradient_resonance_apply_updates_parameter_objects():
+    resonance = GradientResonanceOptimization(resonance_strength=0.4, backend_hint="python")
+    param_a = _DummyParam()
+    param_b = _DummyParam()
+    gradients = {param_a: [1.0, -1.0], param_b: [0.25, 0.75]}
+
+    # Prime the running signatures.
+    resonance.apply(gradients, _DummyOptimizer([param_a, param_b]))
+    param_a.grad = None
+    param_b.grad = None
+
+    optimizer = _DummyOptimizer([param_a, param_b])
+    scaled = resonance.apply(gradients, optimizer)
+
+    assert optimizer.steps == 1
+    assert param_a.grad == scaled[param_a]
+    assert param_b.grad == scaled[param_b]
+
+
+def test_replay_buffer_load_respects_saved_capacity():
+    source = NeuralSymbolicReplayBuffer(capacity=2)
+    source.add({"id": 1}, difficulty=0.4)
+    source.add({"id": 2}, difficulty=0.6)
+    state = source.state_dict()
+
+    restored = NeuralSymbolicReplayBuffer(capacity=5)
+    restored.load_state_dict(state)
+
+    assert restored._capacity == 2
+    assert restored._items.maxlen == 2
+    assert len(restored) == 2
+
+    restored.add({"id": 3}, difficulty=0.8)
+
+    assert len(restored) == 2
+    ids = [item.sample["id"] for item in restored._items]
+    assert 3 in ids and 1 not in ids
