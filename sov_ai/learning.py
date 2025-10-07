@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 from dataclasses import dataclass
 from typing import Dict, Optional
@@ -33,7 +34,8 @@ class SymbolicLearner:
 
     @staticmethod
     def _hash_token(token: str) -> int:
-        return abs(hash(token))
+        digest = hashlib.blake2b(token.encode("utf-8"), digest_size=16).digest()
+        return int.from_bytes(digest, byteorder="big", signed=False)
 
     def _encode(self, text: str) -> torch.Tensor:
         vector = torch.zeros(self._feature_dim, dtype=torch.float32)
