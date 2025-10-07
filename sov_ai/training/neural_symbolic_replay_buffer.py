@@ -95,10 +95,10 @@ class NeuralSymbolicReplayBuffer:
         }
 
     def load_state_dict(self, state: Dict[str, object]) -> None:
-        self._items.clear()
         self._capacity = int(state.get("capacity", self._capacity))
         self._min_difficulty = float(state.get("min_difficulty", self._min_difficulty))
         self._temperature = float(state.get("temperature", self._temperature))
+        self._items = deque(maxlen=self._capacity)
         for raw in state.get("items", []):
             self.add(
                 sample=dict(raw.get("sample", {})),
